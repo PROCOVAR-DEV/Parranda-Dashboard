@@ -41,6 +41,15 @@ services:
       - "80"
     networks:
       - dokploy-network
+    # Traefik lo publica en ccsa.procovar.cloud. El certificado lo saca solo de
+    # Let's Encrypt con el mismo resolver que usan las demas apps del servidor.
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.parranda.rule=Host(`ccsa.procovar.cloud`)
+      - traefik.http.routers.parranda.entrypoints=websecure
+      - traefik.http.routers.parranda.tls.certresolver=letsencrypt
+      - traefik.http.services.parranda.loadbalancer.server.port=80
 
 networks:
   dokploy-network:

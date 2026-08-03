@@ -1,4 +1,6 @@
 """SQLAlchemy ORM models for the Procovar - Parranda PostgreSQL database."""
+from datetime import datetime
+
 from sqlalchemy import (
     Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, BigInteger,
     Numeric, String, UniqueConstraint, func,
@@ -201,7 +203,12 @@ class RefreshLog(Base):
     __tablename__ = "refresh_log"
 
     id = Column(Integer, primary_key=True)
-    started_at = Column(DateTime, default=func.now())
+    # datetime.now (reloj de Python, TZ=America/Havana) y NO func.now(): func.now()
+    # usa el reloj de POSTGRES, que va en UTC. Con uno de cada, started_at y
+    # finished_at quedaban a 4 horas de distancia y la duracion salia NEGATIVA.
+    # El CLAUDE.md avisa de esto: los errores de zona horaria dan numeros
+    # silenciosamente incorrectos, no errores visibles.
+    started_at = Column(DateTime, default=datetime.now)
     finished_at = Column(DateTime, nullable=True)
     status = Column(String(20), nullable=False, default="running")  # running | ok | partial | error
     rows_upserted = Column(Integer, default=0)
