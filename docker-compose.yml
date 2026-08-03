@@ -1,0 +1,47 @@
+# Dashboard Parranda (ccsa.procovar.cloud).
+#
+# NO lleva su propio Postgres a proposito. En este VPS hay UNA sola instancia
+# compartida (procovar-postgres) con una base por proyecto: procovar_pedidos,
+# procovar_delivery, analitics, n8n y ahora parranda. Levantar un Postgres por
+# proyecto desperdicia memoria y multiplica los backups que hay que vigilar.
+#
+# La red `dokploy-network` es la de Swarm: por ella se llega al Postgres
+# compartido por su nombre de servicio.
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      TZ: America/Havana
+      # Apunta al Postgres COMPARTIDO, base `parranda`.
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY}
+      # AxisPos vive en la LAN de la tienda: el VPS solo llega por el tunel
+      # WireGuard. Sin tunel, la parte de AxisPos no funciona (el resto si).
+      AXISPOS_HOST: ${AXISPOS_HOST:-192.168.1.3}
+      AXISPOS_PORT: ${AXISPOS_PORT:-3306}
+      AXISPOS_USER: ${AXISPOS_USER:-root}
+      AXISPOS_PASSWORD: ${AXISPOS_PASSWORD:-root}
+      PEDIDOS_API_URL: ${PEDIDOS_API_URL:-https://pedidos.procovar.cloud/api}
+      PEDIDOS_API_KEY: ${PEDIDOS_API_KEY:?set PEDIDOS_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://ccsa.procovar.cloud}
+    expose:
+      - "5051"
+    networks:
+      - dokploy-network
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "80"
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
