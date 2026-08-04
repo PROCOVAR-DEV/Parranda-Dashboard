@@ -173,5 +173,6 @@ export function currentMonthISO() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const API_BASE = "/api";
-export const POLL_INTERVAL_MS = 5000;
+// (Se retiro POLL_INTERVAL_MS: ya no se pregunta por el estado cada X segundos.
+//  El estado del ETL llega por eventos — ver hooks/useEstadoRefresh.js.)
 export const DEBOUNCE_MS = 300;

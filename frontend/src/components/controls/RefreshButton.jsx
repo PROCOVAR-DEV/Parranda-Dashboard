@@ -1,50 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../api";
-import { POLL_INTERVAL_MS } from "../../constants";
+import useEstadoRefresh from "../../hooks/useEstadoRefresh";
 
 /**
- * Header "Actualizar" button — available to every user.
- * Triggers the ETL for the currently selected date range, polls until it
- * finishes, then calls onComplete() so the active tab refetches.
+ * Boton "Actualizar" de la cabecera — lo ve todo el mundo.
+ *
+ * Lanza el ETL del periodo elegido y, cuando termina, llama a onComplete() para
+ * que la pestania activa recargue. El estado llega POR EVENTOS (ver
+ * useEstadoRefresh): antes se preguntaba cada 5 segundos mientras corria.
  */
 export default function RefreshButton({ fechaInicio, fechaFin, onComplete }) {
-  const [status, setStatus] = useState(null);
-  const pollRef = useRef(null);
-  const wasRunningRef = useRef(false);
-
-  const poll = useCallback(() => {
-    api
-      .get("/refresh/status")
-      .then((r) => {
-        setStatus(r.data);
-        if (r.data.status === "running") {
-          wasRunningRef.current = true;
-          pollRef.current = setTimeout(poll, POLL_INTERVAL_MS);
-        } else if (wasRunningRef.current) {
-          wasRunningRef.current = false;
-          onComplete?.();
-        }
-      })
-      .catch(() => {});
-  }, [onComplete]);
-
-  useEffect(() => {
-    poll();
-    return () => clearTimeout(pollRef.current);
-  }, [poll]);
+  const { status } = useEstadoRefresh(onComplete);
 
   async function trigger() {
     try {
       await api.post("/refresh", { fecha_inicio: fechaInicio, fecha_fin: fechaFin });
-      wasRunningRef.current = true;
-      setStatus({ status: "running" });
-      pollRef.current = setTimeout(poll, POLL_INTERVAL_MS);
+      // No se toca el estado a mano: el servidor avisa por el canal en cuanto
+      // arranca. Pintarlo aqui seria adivinar, y si el arranque fallara la
+      // pantalla diria "actualizando" sin que corriera nada.
     } catch {
-      poll(); // 409 = already running → resync
+      // 409 = ya estaba corriendo. El canal ya lo esta contando; nada que hacer.
     }
   }
 
   const running = status?.status === "running";
+  const progreso = status?.progreso;
   const failed = status?.failed_territories?.length > 0;
   const lastOk = status?.status === "ok" && status?.finished_at;
 
@@ -81,7 +60,11 @@ export default function RefreshButton({ fechaInicio, fechaFin, onComplete }) {
           <path d="M21 12a9 9 0 1 1-2.64-6.36" />
           <path d="M21 3v6h-6" />
         </svg>
-        {running ? "Actualizando…" : "Actualizar"}
+        {running
+          ? progreso?.total
+            ? `Actualizando ${progreso.hechos}/${progreso.total}${progreso.territorio ? ` · ${progreso.territorio}` : ""}`
+            : "Actualizando…"
+          : "Actualizar"}
       </button>
     </div>
   );

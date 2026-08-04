@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { TERRITORIES, SKUS, currentMonthISO, defaultDateRange, POLL_INTERVAL_MS } from "../constants";
+import { TERRITORIES, SKUS, currentMonthISO, defaultDateRange } from "../constants";
+import useEstadoRefresh from "../hooks/useEstadoRefresh";
 import ErrorBanner from "../components/shared/ErrorBanner";
 
 const SECTIONS = [
@@ -487,28 +488,18 @@ function MetasSection() {
 
 function DatosSection() {
   const [range, setRange] = useState(defaultDateRange());
-  const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
   const [host, setHost] = useState("");
   const [pedidosUrl, setPedidosUrl] = useState("");
   const [pedidosKey, setPedidosKey] = useState("");
   const [pedidosKeySet, setPedidosKeySet] = useState(false);
-  const pollRef = useRef(null);
 
-  const poll = useCallback(() => {
-    api
-      .get("/refresh/status")
-      .then((r) => {
-        setStatus(r.data);
-        if (r.data.status === "running") {
-          pollRef.current = setTimeout(poll, POLL_INTERVAL_MS);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Mismo canal de eventos que el boton de la cabecera: el servidor avisa, aqui
+  // no se pregunta nada. Antes esta pantalla tenia su PROPIO temporizador, asi
+  // que teniendola abierta junto al panel se preguntaba dos veces por lo mismo.
+  const { status } = useEstadoRefresh();
 
   useEffect(() => {
-    poll();
     api
       .get("/config/server")
       .then((r) => {
@@ -517,8 +508,7 @@ function DatosSection() {
         setPedidosKeySet(Boolean(r.data.pedidos_api_key_set));
       })
       .catch(() => {});
-    return () => clearTimeout(pollRef.current);
-  }, [poll]);
+  }, []);
 
   async function triggerRefresh(territories = null) {
     setError(null);
@@ -529,7 +519,7 @@ function DatosSection() {
       } else {
         await api.post("/refresh", body);
       }
-      poll();
+      // Nada que hacer: el canal de eventos avisa en cuanto arranca.
     } catch (err) {
       setError(err.response?.data?.error || "Error al iniciar actualización");
     }

@@ -29,6 +29,8 @@ from __future__ import annotations
 import logging
 from datetime import date
 
+import threading
+from contextlib import contextmanager
 import pymysql
 import pymysql.cursors
 
@@ -145,7 +147,7 @@ _STOCK_QUERY_TEMPLATE = """
 """
 
 
-def _get_connection(db_name: str) -> pymysql.connections.Connection:
+def _abrir_conexion(db_name: str) -> pymysql.connections.Connection:
     settings = config.axispos_settings()
     return pymysql.connect(
         host=settings["axispos_host"],
@@ -157,6 +159,89 @@ def _get_connection(db_name: str) -> pymysql.connections.Connection:
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
     )
+
+
+# ── Conexiones reutilizadas ───────────────────────────────────────────────────
+#
+# AxisPos esta al otro lado de un tunel, y ABRIR la conexion cuesta ~890 ms
+# —handshake TCP, saludo de MySQL y autenticacion—, mientras que la consulta de
+# stock tarda ~230 ms. Medido territorio por territorio: casi el 80% del tiempo
+# se iba en abrir y cerrar conexiones que se tiraban a la basura en cada
+# peticion, nueve por vez (una por territorio).
+#
+# (Al principio pense que lo lento era la consulta, por un `DATE(op.Date)` que
+# impide usar el indice. Lo comprobe antes de tocarlo: la tabla `operations`
+# tiene 27 mil filas y las dos formas tardan lo mismo. No era eso.)
+#
+# Guardando las conexiones abiertas entre peticiones, ese coste se paga UNA vez
+# y no en cada carga del panel.
+_POOL_POR_BASE = 2          # gunicorn corre 1 worker con 8 hilos; con 2 sobra
+_pool: dict[str, list] = {}
+_pool_lock = threading.Lock()
+
+
+@contextmanager
+def _conexion(db_name: str):
+    """Presta una conexion del almacen y la devuelve al terminar.
+
+    Si la conexion guardada ya no sirve (MySQL las cierra por inactividad, o el
+    tunel se corto), `ping(reconnect=True)` la levanta de nuevo; y si ni eso, se
+    abre una limpia. El que la usa no se entera: pide una conexion y funciona.
+    """
+    conn = None
+    with _pool_lock:
+        libres = _pool.get(db_name)
+        if libres:
+            conn = libres.pop()
+
+    if conn is not None:
+        try:
+            conn.ping(reconnect=True)
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            conn = None
+
+    if conn is None:
+        conn = _abrir_conexion(db_name)
+
+    try:
+        yield conn
+    except Exception:
+        # Si algo fallo, la conexion puede haber quedado a medias (una
+        # transaccion abierta, el cursor sucio). Se tira en vez de devolverla al
+        # almacen: reutilizar una conexion en mal estado contamina la siguiente
+        # consulta, y ese fallo aparece lejos de aqui y no hay quien lo ate.
+        try:
+            conn.close()
+        except Exception:
+            pass
+        raise
+
+    with _pool_lock:
+        libres = _pool.setdefault(db_name, [])
+        if len(libres) < _POOL_POR_BASE:
+            libres.append(conn)
+            return
+    try:
+        conn.close()
+    except Exception:
+        pass
+
+
+def cerrar_conexiones() -> None:
+    """Cierra todo lo guardado. Para cuando cambia la configuracion de AxisPos:
+    las conexiones viejas apuntarian al servidor anterior."""
+    with _pool_lock:
+        for libres in _pool.values():
+            for c in libres:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+        _pool.clear()
 
 
 def _apply_fecha_min(fecha_inicio: date, fecha_fin: date, fecha_min: date | None) -> tuple[date, date] | None:
@@ -213,8 +298,7 @@ def extract_territory(territory_nombre: str, db_name: str,
     fecha_inicio, fecha_fin = clamped
 
     logger.info("Extracting ventas %s (%s) %s..%s", territory_nombre, db_name, fecha_inicio, fecha_fin)
-    conn = _get_connection(db_name)
-    with conn:
+    with _conexion(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute(_SALES_QUERY, (*SALE_OPER_TYPES, fecha_inicio.isoformat(), fecha_fin.isoformat()))
             return _aggregate_by_sku(cur.fetchall(), territory_nombre)
@@ -230,8 +314,7 @@ def extract_returns_territory(territory_nombre: str, db_name: str,
     fecha_inicio, fecha_fin = clamped
 
     logger.info("Extracting devoluciones %s (%s) %s..%s", territory_nombre, db_name, fecha_inicio, fecha_fin)
-    conn = _get_connection(db_name)
-    with conn:
+    with _conexion(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute(_RETURNS_QUERY, (*RETURN_OPER_TYPES, fecha_inicio.isoformat(), fecha_fin.isoformat()))
             return _aggregate_by_sku(cur.fetchall(), territory_nombre)
@@ -249,8 +332,7 @@ def extract_clientes_territory(territory_nombre: str, db_name: str,
     logger.info("Extracting clientes %s (%s) %s..%s", territory_nombre, db_name, fecha_inicio, fecha_fin)
     rows: list[dict] = []
     seen: set[tuple] = set()
-    conn = _get_connection(db_name)
-    with conn:
+    with _conexion(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute(_CLIENT_QUERY, (*SALE_OPER_TYPES, fecha_inicio.isoformat(), fecha_fin.isoformat()))
             for row in cur.fetchall():
@@ -287,8 +369,7 @@ def extract_observaciones_territory(territory_nombre: str, db_name: str,
     fecha_inicio, fecha_fin = clamped
 
     logger.info("Extracting observaciones %s (%s) %s..%s", territory_nombre, db_name, fecha_inicio, fecha_fin)
-    conn = _get_connection(db_name)
-    with conn:
+    with _conexion(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute(_OBSERVACION_QUERY, (*SALE_OPER_TYPES, fecha_inicio.isoformat(), fecha_fin.isoformat()))
             return [
@@ -323,8 +404,7 @@ def extract_stock_territory(territory_nombre: str, db_name: str, fecha: date,
         return []
 
     agg: dict[str, dict] = {}
-    conn = _get_connection(db_name)
-    with conn:
+    with _conexion(db_name) as conn:
         with conn.cursor() as cur:
             if fecha_min is not None:
                 query = _STOCK_QUERY_TEMPLATE.format(

@@ -11,6 +11,7 @@ GET/POST /api/config/server — AxisPos connection settings (admin only)
 """
 from __future__ import annotations
 
+import json
 import logging
 import threading
 from datetime import date, datetime
@@ -33,6 +34,65 @@ bp = Blueprint("refresh", __name__)
 _lock = threading.Lock()
 
 
+# ── Aviso de cambios (SSE, sin preguntar cada X segundos) ─────────────────────
+#
+# Antes el boton "Actualizar" preguntaba por el estado cada 5 segundos mientras
+# corria el ETL. Eso es preguntar por si acaso: la mayoria de las veces la
+# respuesta es "sigo igual", y con varias personas mirando se multiplica.
+#
+# Aqui el ETL AVISA cuando cambia algo y el navegador se entera al momento. La
+# espera es sobre una condicion, asi que el hilo del SSE duerme de verdad y no
+# consume nada mientras no pasa nada.
+#
+# El aviso es EN MEMORIA porque el backend corre en un solo proceso (gunicorn con
+# un worker y varios hilos). Si algun dia se pone mas de un worker, esto hay que
+# moverlo a Redis: cada worker tendria su propia memoria y los avisos de uno no
+# llegarian a los navegadores conectados al otro.
+_cambios = threading.Condition()
+_version = 0
+_progreso: dict = {"territorio": None, "hechos": 0, "total": 0}
+
+
+def _avisar(**datos) -> None:
+    global _version
+    with _cambios:
+        _progreso.update(datos)
+        _version += 1
+        _cambios.notify_all()
+
+
+# Tickets de un solo uso para el SSE. EventSource no puede mandar cabeceras, asi
+# que no se puede pasar el token normal; y ponerlo en la URL lo dejaria escrito
+# en los logs del proxy. Se pide un ticket con el token de siempre y se abre el
+# stream con el ticket, que vale una vez y caduca en un minuto.
+_TICKETS: dict[str, float] = {}
+_tickets_lock = threading.Lock()
+TICKET_SEGUNDOS = 60
+
+
+def _emitir_ticket() -> str:
+    import secrets, time
+
+    t = secrets.token_urlsafe(24)
+    ahora = time.time()
+    with _tickets_lock:
+        for k, exp in list(_TICKETS.items()):
+            if exp < ahora:
+                _TICKETS.pop(k, None)
+        _TICKETS[t] = ahora + TICKET_SEGUNDOS
+    return t
+
+
+def _consumir_ticket(t: str | None) -> bool:
+    import time
+
+    if not t:
+        return False
+    with _tickets_lock:
+        exp = _TICKETS.pop(t, None)
+    return bool(exp and exp > time.time())
+
+
 def _run_etl(log_id: int, fecha_inicio: date, fecha_fin: date, territory_names: list[str] | None):
     """Background ETL: ventas → clientes → devoluciones per territory."""
     from app import SessionLocal
@@ -46,8 +106,12 @@ def _run_etl(log_id: int, fecha_inicio: date, fecha_fin: date, territory_names: 
     rows_upserted = 0
     failed: list[str] = []
 
-    for entry in targets:
+    total = len(targets) + (1 if territory_names is None else 0)  # +1 = Pedidos
+    _avisar(territorio=None, hechos=0, total=total)
+
+    for indice, entry in enumerate(targets):
         nombre, db_name = entry["nombre"], entry["db"]
+        _avisar(territorio=nombre, hechos=indice, total=total)
         fecha_min = entry.get("fecha_min")
         try:
             ventas_rows = extract.extract_territory(nombre, db_name, fecha_inicio, fecha_fin, fecha_min)
@@ -75,6 +139,7 @@ def _run_etl(log_id: int, fecha_inicio: date, fecha_fin: date, territory_names: 
     # after the territory loop. A pedidos failure is reported as its own pseudo
     # territory: the AxisPos side is still valid and must not be marked failed.
     if territory_names is None:
+        _avisar(territorio="Pedidos", hechos=len(targets), total=total)
         try:
             pedidos_rows = pedidos_extract.extract_pedidos(fecha_inicio, fecha_fin)
             session = SessionLocal()
@@ -102,6 +167,10 @@ def _run_etl(log_id: int, fecha_inicio: date, fecha_fin: date, territory_names: 
             session.commit()
     finally:
         session.close()
+
+    # Se avisa DESPUES de guardar, no antes: si se avisara primero, el navegador
+    # pediria el estado y leeria todavia "running" de la base.
+    _avisar(territorio=None, hechos=total, total=total)
 
 
 def _start_refresh(fecha_inicio: date, fecha_fin: date, territory_names: list[str] | None):
@@ -164,9 +233,9 @@ def retry_refresh():
     return jsonify({"status": "running", "log_id": log_id})
 
 
-@bp.route("/refresh/status")
-@jwt_required()
-def refresh_status():
+def _estado_actual() -> dict:
+    """El estado del ETL. UNA sola funcion para /status y para el SSE: si cada
+    uno lo armara por su cuenta, acabarian diciendo cosas distintas."""
     from app import get_db
     from models import RefreshLog
 
@@ -174,16 +243,76 @@ def refresh_status():
     try:
         log = db.query(RefreshLog).order_by(RefreshLog.id.desc()).first()
         if not log:
-            return jsonify({"status": "idle"})
-        return jsonify({
+            return {"status": "idle"}
+        estado = {
             "status": log.status,
             "rows_upserted": log.rows_upserted or 0,
             "failed_territories": [t for t in (log.failed_territories or "").split(",") if t],
             "started_at": log.started_at.isoformat() if log.started_at else None,
             "finished_at": log.finished_at.isoformat() if log.finished_at else None,
-        })
+        }
+        if log.status == "running":
+            estado["progreso"] = dict(_progreso)
+        return estado
     finally:
         db.close()
+
+
+@bp.route("/refresh/status")
+@jwt_required()
+def refresh_status():
+    # Se mantiene por compatibilidad y como respaldo: si el navegador no puede
+    # abrir el stream (un proxy que corta las conexiones largas), la pantalla
+    # sigue pudiendo preguntar una vez en lugar de quedarse sin saber nada.
+    return jsonify(_estado_actual())
+
+
+@bp.route("/refresh/sse-ticket", methods=["POST"])
+@jwt_required()
+def refresh_sse_ticket():
+    return jsonify({"ticket": _emitir_ticket()})
+
+
+@bp.route("/refresh/stream")
+def refresh_stream():
+    """Estado del ETL en vivo. El navegador NO pregunta: se le avisa.
+
+    Auth por ticket de un solo uso porque EventSource no puede mandar cabeceras
+    (ver _emitir_ticket).
+    """
+    from flask import Response, stream_with_context
+
+    if not _consumir_ticket(request.args.get("ticket")):
+        return jsonify({"error": "Ticket invalido o caducado"}), 401
+
+    def generar():
+        # `ready` primero: asi el navegador sabe que ya esta suscrito de verdad y
+        # no solo que abrio la conexion.
+        yield "event: ready\ndata: {}\n\n"
+        yield f"event: estado\ndata: {json.dumps(_estado_actual())}\n\n"
+
+        visto = _version
+        while True:
+            with _cambios:
+                # Duerme hasta que el ETL avise. El tope de 20 s no es para
+                # preguntar: es para mandar un latido y que ningun proxy de por
+                # muerta la conexion por estar callada.
+                hubo_cambio = _cambios.wait_for(lambda: _version != visto, timeout=20)
+                visto = _version
+            if hubo_cambio:
+                yield f"event: estado\ndata: {json.dumps(_estado_actual())}\n\n"
+            else:
+                yield ": latido\n\n"
+
+    return Response(
+        stream_with_context(generar()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 _SECRET_SETTINGS = ("axispos_password", "pedidos_api_key")
