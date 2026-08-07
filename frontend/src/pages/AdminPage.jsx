@@ -186,8 +186,10 @@ function UsersSection() {
                   {u.role === "admin" ? (
                     <span className="text-[11px] text-gray-400 italic">Todas (admin)</span>
                   ) : (
-                    <TabChips
-                      allowedTabs={u.allowed_tabs}
+                    <PermisoSelect
+                      opciones={TAB_OPTIONS}
+                      valor={u.allowed_tabs}
+                      etiquetaTodos="Todas las pestañas"
                       onChange={(tabs) => updateUser(u.id, { allowed_tabs: tabs })}
                     />
                   )}
@@ -198,8 +200,10 @@ function UsersSection() {
                       Todos (admin)
                     </span>
                   ) : (
-                    <TerritoryChips
-                      allowed={u.allowed_territories}
+                    <PermisoSelect
+                      opciones={TERRITORIES.map((t) => ({ id: t, label: t }))}
+                      valor={u.allowed_territories}
+                      etiquetaTodos="Todos los territorios"
                       onChange={(t) =>
                         updateUser(u.id, { allowed_territories: t })
                       }
@@ -250,82 +254,109 @@ function UsersSection() {
   );
 }
 
-function TabChips({ allowedTabs, onChange }) {
-  // null = all tabs visible
-  const active = allowedTabs ?? TAB_OPTIONS.map((t) => t.id);
 
-  function toggle(id) {
-    const next = active.includes(id) ? active.filter((t) => t !== id) : [...active, id];
-    if (next.length === 0) return; // never leave a user without any tab
-    onChange(next.length === TAB_OPTIONS.length ? null : next);
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {TAB_OPTIONS.map((t) => {
-        const on = active.includes(t.id);
-        return (
-          <button
-            key={t.id}
-            onClick={() => toggle(t.id)}
-            title={on ? `Ocultar ${t.label}` : `Mostrar ${t.label}`}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors ${
-              on
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-gray-300 border-gray-200 hover:border-gray-300"
-            }`}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
- * Territorios que ve un usuario. Mismo comportamiento que las pestañas, a
- * proposito: una sola forma de decir "esto lo ve y esto no".
+ * Elegir varias opciones sin llenar la fila de fichas.
  *
- * `null` significa TODOS. Es lo que permite dar una cuenta a cada sucursal que
- * solo vea lo suyo sin tener que marcar los ocho restantes uno por uno.
+ * Antes cada permiso se pintaba como una ficha por opcion. Con seis pestañas
+ * cabian en una linea; con NUEVE territorios se partian en dos filas y cada
+ * usuario ocupaba el triple de alto — la tabla se leia peor cuantas mas
+ * sucursales hubiera, que es justo al reves de lo que hace falta.
  *
- * Quitar el ultimo no se permite: un usuario sin ningun territorio entraria a un
- * panel vacio, que parece roto y no lo esta. Si hay que quitarle el acceso, se
- * desactiva la cuenta, que es lo que significa de verdad.
+ * El boton dice el estado en palabras, no en numeros sueltos: "Todos",
+ * "Camagüey", o "Camagüey +2". Quien administra quiere saber de un vistazo si
+ * alguien esta restringido y a que; el detalle exacto lo abre solo si le hace
+ * falta.
+ *
+ * `null` significa TODOS, igual que en la base: no hay dos formas de decir lo
+ * mismo. Y no se puede dejar a nadie con cero — un usuario sin nada entra a un
+ * panel vacio, que parece roto y no lo esta. Para quitarle el acceso esta
+ * "Desactivar", que es lo que de verdad significa.
  */
-function TerritoryChips({ allowed, onChange }) {
-  const active = allowed ?? TERRITORIES;
+function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
+  const [abierto, setAbierto] = useState(false);
+  const caja = useRef(null);
 
-  function toggle(nombre) {
-    const next = active.includes(nombre)
-      ? active.filter((t) => t !== nombre)
-      : [...active, nombre];
+  const activos = valor ?? opciones.map((o) => o.id);
+  const todos = activos.length === opciones.length;
 
-    if (next.length === 0) return;
-    onChange(next.length === TERRITORIES.length ? null : next);
+  // Cerrar al pulsar fuera o con Escape: si no, quedan varios abiertos a la vez
+  // y se solapan encima de las filas de abajo.
+  useEffect(() => {
+    if (!abierto) return;
+
+    const fuera = (e) => {
+      if (caja.current && !caja.current.contains(e.target)) setAbierto(false);
+    };
+    const escape = (e) => e.key === "Escape" && setAbierto(false);
+
+    document.addEventListener("mousedown", fuera);
+    document.addEventListener("keydown", escape);
+
+    return () => {
+      document.removeEventListener("mousedown", fuera);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [abierto]);
+
+  function alternar(id) {
+    const siguiente = activos.includes(id)
+      ? activos.filter((x) => x !== id)
+      : [...activos, id];
+
+    if (siguiente.length === 0) return;
+    onChange(siguiente.length === opciones.length ? null : siguiente);
   }
 
-  return (
-    <div className="flex flex-wrap gap-1 max-w-[420px]">
-      {TERRITORIES.map((nombre) => {
-        const on = active.includes(nombre);
+  const nombres = opciones.filter((o) => activos.includes(o.id)).map((o) => o.label);
+  const resumen = todos
+    ? etiquetaTodos
+    : nombres.length === 1
+      ? nombres[0]
+      : `${nombres[0]} +${nombres.length - 1}`;
 
-        return (
+  return (
+    <div ref={caja} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        className={`flex items-center gap-1.5 min-w-[170px] px-2.5 py-1 rounded-md border text-xs text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/40 ${
+          todos
+            ? "border-gray-200 text-gray-400 bg-white hover:border-gray-300"
+            : "border-navy/30 text-navy bg-navy/5 hover:border-navy/50 font-semibold"
+        }`}
+      >
+        <span className="flex-1 truncate">{resumen}</span>
+        <span className="text-[9px] opacity-60">{abierto ? "▲" : "▼"}</span>
+      </button>
+
+      {abierto && (
+        <div className="absolute z-20 mt-1 w-56 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg py-1">
           <button
-            key={nombre}
-            onClick={() => toggle(nombre)}
-            title={on ? `Ocultar ${nombre}` : `Mostrar ${nombre}`}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors ${
-              on
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-gray-300 border-gray-200 hover:border-gray-300"
-            }`}
+            type="button"
+            onClick={() => onChange(null)}
+            className="w-full text-left px-3 py-1.5 text-xs text-navy hover:bg-gray-50 border-b border-gray-100"
           >
-            {nombre}
+            {etiquetaTodos}
           </button>
-        );
-      })}
+          {opciones.map((o) => (
+            <label
+              key={o.id}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50"
+            >
+              <input
+                type="checkbox"
+                checked={activos.includes(o.id)}
+                onChange={() => alternar(o.id)}
+                className="accent-[#1B3A6B] w-3.5 h-3.5"
+              />
+              <span className="truncate">{o.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
