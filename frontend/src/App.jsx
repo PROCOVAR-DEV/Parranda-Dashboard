@@ -37,6 +37,12 @@ function Dashboard() {
   const visibleTabs = TABS.filter(
     (t) => isAdmin || !user.allowed_tabs || user.allowed_tabs.includes(t.id)
   );
+  // Territorios que puede ver: el admin todos; a un usuario de sucursal se le
+  // asignan los suyos (null = todos). El servidor lo aplica igual en cada
+  // consulta — esto es para que no vea marcados los de otras sucursales.
+  const territoriosVisibles =
+    isAdmin || !user.allowed_territories ? TERRITORIES : user.allowed_territories;
+
   const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id ?? "ventas");
 
   useEffect(() => {
@@ -142,6 +148,7 @@ function Dashboard() {
         {showFilters && (
           <FilterPanel
             activeTab={activeTab}
+            territoriosVisibles={territoriosVisibles}
             filters={filters}
             onUpdate={onUpdate}
             ventasMetric={ventasMetric}

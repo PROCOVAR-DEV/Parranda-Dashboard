@@ -79,3 +79,61 @@ def me():
         return jsonify(user.to_dict())
     finally:
         db.close()
+
+
+def territorios_permitidos(solicitados=None):
+    """Los territorios que ESTA petición puede ver de verdad.
+
+    Es el ÚNICO sitio donde se decide. Seis rutas leían
+    `request.args.getlist("territorio")` por su cuenta y filtraban con lo que
+    llegara: si cada una aplica el permiso a su manera, tarde o temprano una se
+    lo salta y enseña datos de otra sucursal. Eso no falla con un error — falla
+    enseñando cifras que no tocan, que es la forma cara de fallar.
+
+    Reglas:
+
+      - **admin**: lo ve todo. Lo que pida es lo que se le da.
+      - **con territorios asignados**: se le da la INTERSECCIÓN de lo que pide
+        con lo suyo. Si pide uno que no es suyo, no sale — no da error, sale
+        vacío, que es lo que corresponde a algo que para él no existe.
+      - **con territorios asignados y sin pedir nada**: se le dan LOS SUYOS. Sin
+        esto, "sin filtro" significaría "todos" y vería el país entero.
+      - **sin territorios asignados**: como hasta ahora, lo ve todo.
+
+    Devuelve una lista de nombres, o None cuando significa "todos" (que es lo
+    que las consultas ya entienden como "no filtres").
+    """
+    from app import get_db
+    from models import User
+
+    solicitados = [t for t in (solicitados or []) if t]
+
+    try:
+        claims = get_jwt()
+    except Exception:
+        # Sin token no se llega aqui (las rutas van con @jwt_required), pero si
+        # alguna vez se llamara suelta, lo prudente es no dar nada.
+        return solicitados or None
+
+    if claims.get("role") == "admin":
+        return solicitados or None
+
+    db = get_db()
+    try:
+        user = db.get(User, int(get_jwt_identity()))
+        suyos = [t for t in ((user.allowed_territories if user else "") or "").split(",") if t]
+    finally:
+        db.close()
+
+    if not suyos:
+        return solicitados or None
+
+    if not solicitados:
+        return suyos
+
+    permitidos = [t for t in solicitados if t in suyos]
+
+    # Pidio SOLO territorios ajenos: se devuelve una lista imposible en vez de
+    # None. Si se devolviera None, "sin filtro" se leeria como "todos" y veria
+    # justo lo que no debe.
+    return permitidos or ["__ninguno__"]

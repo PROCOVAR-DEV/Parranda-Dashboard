@@ -31,6 +31,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import config
+from auth import territorios_permitidos
 
 bp = Blueprint("pedidos", __name__)
 
@@ -196,7 +197,10 @@ def get_pedidos():
     today = date.today()
     fecha_inicio = parse_date(request.args.get("fecha_inicio"), date(today.year, today.month, 1))
     fecha_fin = parse_date(request.args.get("fecha_fin"), today)
-    territorios_filter = request.args.getlist("territorio")
+    # El permiso lo aplica `territorios_permitidos`, no esta ruta. Es el UNICO
+    # sitio que decide: si cada una lo hiciera a su manera, alguna acabaria
+    # enseniando datos de otra sucursal sin dar ningun error.
+    territorios_filter = territorios_permitidos(request.args.getlist("territorio"))
     skus_filter = request.args.getlist("sku")
 
     db = get_db()

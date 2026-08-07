@@ -11,6 +11,7 @@ from flask import Blueprint, jsonify, request
 from cache_reportes import cachear_reporte
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
+from auth import territorios_permitidos
 
 bp = Blueprint("ventas", __name__)
 
@@ -35,10 +36,18 @@ def get_territorios():
     from app import get_db
     from models import Territory
 
+    # Solo los SUYOS. Esta lista alimenta las casillas del panel de filtros:
+    # si se devolvieran todos, una cuenta de sucursal veria los nombres de las
+    # demas y podria marcarlas — no le saldrian datos (el permiso se aplica en
+    # cada consulta), pero es enseniar algo que no es suyo y confunde.
+    permitidos = territorios_permitidos()
+
     db = get_db()
     try:
-        territories = db.query(Territory).order_by(Territory.orden).all()
-        return jsonify([t.to_dict() for t in territories])
+        q = db.query(Territory).order_by(Territory.orden)
+        if permitidos:
+            q = q.filter(Territory.nombre.in_(permitidos))
+        return jsonify([t.to_dict() for t in q.all()])
     finally:
         db.close()
 
@@ -107,7 +116,10 @@ def get_ventas():
 
     fecha_inicio = parse_date(request.args.get("fecha_inicio"), _first_of_month())
     fecha_fin = parse_date(request.args.get("fecha_fin"), date.today())
-    territorios_filter = request.args.getlist("territorio")
+    # El permiso lo aplica `territorios_permitidos`, no esta ruta. Es el UNICO
+    # sitio que decide: si cada una lo hiciera a su manera, alguna acabaria
+    # enseniando datos de otra sucursal sin dar ningun error.
+    territorios_filter = territorios_permitidos(request.args.getlist("territorio"))
     group_by = request.args.get("group_by", "territorio_sku")
     if group_by not in ("territorio_sku", "fecha_sku"):
         group_by = "territorio_sku"

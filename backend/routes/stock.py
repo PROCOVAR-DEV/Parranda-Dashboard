@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import config
 from etl.extract import extract_stock_territory
 from routes.ventas import parse_date
+from auth import territorios_permitidos
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +126,9 @@ def get_stock():
       territorio  repeatable (omit = all 9)
     """
     fecha = parse_date(request.args.get("fecha"), date.today())
-    territorios_filter = set(request.args.getlist("territorio"))
+    # Igual que las demas: el permiso lo decide `territorios_permitidos`.
+    _permitidos = territorios_permitidos(request.args.getlist("territorio"))
+    territorios_filter = set(_permitidos) if _permitidos else set()
 
     rows, failed = _fetch_stock_cacheado(fecha, territorios_filter)
 

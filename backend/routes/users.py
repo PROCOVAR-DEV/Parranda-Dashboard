@@ -32,6 +32,34 @@ def _parse_allowed_tabs(raw) -> str | None:
     return ",".join(t for t in VALID_TABS if t in tabs)
 
 
+def _parse_allowed_territories(raw) -> str | None:
+    """Igual que `_parse_allowed_tabs`, pero con territorios.
+
+    Se validan contra la lista canonica: si llegara un nombre que no existe se
+    descarta en vez de guardarse, porque un territorio mal escrito no filtraria
+    nada y la cuenta acabaria viendolo TODO — justo lo contrario de lo que se
+    pretende al asignarlos.
+
+    Vacio o "todos marcados" se guarda como NULL, que ya significa "todos": asi
+    no hay dos formas distintas de decir lo mismo.
+    """
+    from config import TERRITORY_DB_MAP
+
+    # La lista canonica sale de config, no de la base: es la misma que usa el
+    # ETL y la que da /api/territorios, asi que no pueden discrepar.
+    validos = [t["nombre"] for t in TERRITORY_DB_MAP]
+
+    if raw is None:
+        return None
+
+    elegidos = [t for t in raw if t in validos]
+
+    if not elegidos or set(elegidos) == set(validos):
+        return None
+
+    return ",".join(t for t in validos if t in elegidos)
+
+
 @bp.route("/users")
 @admin_required
 def list_users():
@@ -74,6 +102,7 @@ def create_user():
             display_name=(data.get("display_name") or "").strip(),
             role=role,
             allowed_tabs=_parse_allowed_tabs(data.get("allowed_tabs")),
+            allowed_territories=_parse_allowed_territories(data.get("allowed_territories")),
         )
         db.add(user)
         db.commit()
@@ -113,6 +142,10 @@ def update_user(user_id: int):
             user.active = bool(data.get("active"))
         if "allowed_tabs" in data:
             user.allowed_tabs = _parse_allowed_tabs(data.get("allowed_tabs"))
+        if "allowed_territories" in data:
+            user.allowed_territories = _parse_allowed_territories(
+                data.get("allowed_territories")
+            )
         if data.get("password"):
             if len(data["password"]) < 6:
                 return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400

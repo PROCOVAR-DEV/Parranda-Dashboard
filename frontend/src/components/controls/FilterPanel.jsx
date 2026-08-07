@@ -22,6 +22,8 @@ export default function FilterPanel({
   stockMetric, onStockMetric,
   stockFecha, onStockFecha,
   precision, onPrecision,
+  // Los territorios que ESTE usuario puede ver. Por defecto, todos.
+  territoriosVisibles = TERRITORIES,
 }) {
   function toggleTerritory(t) {
     const list = filters.territorios.includes(t)
@@ -174,7 +176,7 @@ export default function FilterPanel({
             </button>
           </div>
           <div className="space-y-1">
-            {TERRITORIES.map((t) => {
+            {territoriosVisibles.map((t) => {
               const checked = isAllSelected || filters.territorios.includes(t);
               return (
                 <label key={t} className="flex items-center gap-2 cursor-pointer text-sm py-0.5">

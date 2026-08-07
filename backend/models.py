@@ -248,7 +248,8 @@ class User(Base):
     """
     Dashboard user. role: admin (full control) | viewer (read-only data tabs).
     allowed_tabs: comma-separated tab keys the user can see; NULL/empty = all tabs.
-    Admins always see every tab regardless of this field.
+    allowed_territories: comma-separated territory names; NULL/empty = all.
+    Admins always see every tab and every territory regardless of these fields.
     """
     __tablename__ = "users"
 
@@ -259,6 +260,18 @@ class User(Base):
     role = Column(String(20), nullable=False, default="viewer")  # admin | viewer
     active = Column(Boolean, nullable=False, default=True)
     allowed_tabs = Column(String(200), nullable=True)
+    # Territorios que puede ver, separados por comas. NULL/vacio = TODOS.
+    #
+    # Mismo patron que `allowed_tabs` a proposito: una sola forma de decir "esto
+    # lo ve y esto no". Sirve para dar una cuenta a cada sucursal que solo vea
+    # lo suyo.
+    #
+    # Se guarda el NOMBRE del territorio (Havana, Camaguey...), no un id, porque
+    # es lo que usan los filtros de todas las consultas y lo que devuelve
+    # /api/territorios: asi no hay que traducir en cada sitio.
+    #
+    # OJO: el admin lo ve TODO, ignore lo que ponga aqui.
+    allowed_territories = Column(String(400), nullable=True)
     created_at = Column(DateTime, default=func.now())
 
     def to_dict(self) -> dict:
@@ -269,6 +282,9 @@ class User(Base):
             "role": self.role,
             "active": self.active,
             "allowed_tabs": [t for t in (self.allowed_tabs or "").split(",") if t] or None,
+            "allowed_territories": [
+                t for t in (self.allowed_territories or "").split(",") if t
+            ] or None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

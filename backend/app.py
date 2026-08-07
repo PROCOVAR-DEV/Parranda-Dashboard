@@ -14,7 +14,7 @@ from datetime import timedelta
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -101,6 +101,17 @@ def seed_database() -> None:
     from auth import hash_password
 
     Base.metadata.create_all(engine)
+
+    # `create_all` crea tablas nuevas, pero NO aniade columnas a una tabla que ya
+    # existe. Sin esto, la columna solo aparece en instalaciones nuevas y en la
+    # que ya esta corriendo el login revienta al leer el usuario.
+    #
+    # `IF NOT EXISTS` lo hace repetible: se puede arrancar mil veces sin romper
+    # nada, que es lo que hace falta cuando el arranque es automatico.
+    with engine.begin() as conn:
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_territories VARCHAR(400)"
+        ))
     db = SessionLocal()
     try:
         if db.query(Territory).count() == 0:

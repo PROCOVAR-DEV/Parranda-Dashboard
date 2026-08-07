@@ -161,6 +161,7 @@ function UsersSection() {
               <th className="px-4 py-2.5 font-semibold">Nombre</th>
               <th className="px-4 py-2.5 font-semibold">Rol</th>
               <th className="px-4 py-2.5 font-semibold">Pestañas Visibles</th>
+              <th className="px-4 py-2.5 font-semibold">Territorios</th>
               <th className="px-4 py-2.5 font-semibold">Estado</th>
               <th className="px-4 py-2.5 font-semibold">Creado</th>
               <th className="px-4 py-2.5 font-semibold text-right">Acciones</th>
@@ -188,6 +189,20 @@ function UsersSection() {
                     <TabChips
                       allowedTabs={u.allowed_tabs}
                       onChange={(tabs) => updateUser(u.id, { allowed_tabs: tabs })}
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {u.role === "admin" ? (
+                    <span className="text-[11px] text-gray-400 italic">
+                      Todos (admin)
+                    </span>
+                  ) : (
+                    <TerritoryChips
+                      allowed={u.allowed_territories}
+                      onChange={(t) =>
+                        updateUser(u.id, { allowed_territories: t })
+                      }
                     />
                   )}
                 </td>
@@ -261,6 +276,53 @@ function TabChips({ allowedTabs, onChange }) {
             }`}
           >
             {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Territorios que ve un usuario. Mismo comportamiento que las pestañas, a
+ * proposito: una sola forma de decir "esto lo ve y esto no".
+ *
+ * `null` significa TODOS. Es lo que permite dar una cuenta a cada sucursal que
+ * solo vea lo suyo sin tener que marcar los ocho restantes uno por uno.
+ *
+ * Quitar el ultimo no se permite: un usuario sin ningun territorio entraria a un
+ * panel vacio, que parece roto y no lo esta. Si hay que quitarle el acceso, se
+ * desactiva la cuenta, que es lo que significa de verdad.
+ */
+function TerritoryChips({ allowed, onChange }) {
+  const active = allowed ?? TERRITORIES;
+
+  function toggle(nombre) {
+    const next = active.includes(nombre)
+      ? active.filter((t) => t !== nombre)
+      : [...active, nombre];
+
+    if (next.length === 0) return;
+    onChange(next.length === TERRITORIES.length ? null : next);
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 max-w-[420px]">
+      {TERRITORIES.map((nombre) => {
+        const on = active.includes(nombre);
+
+        return (
+          <button
+            key={nombre}
+            onClick={() => toggle(nombre)}
+            title={on ? `Ocultar ${nombre}` : `Mostrar ${nombre}`}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-colors ${
+              on
+                ? "bg-navy text-white border-navy"
+                : "bg-white text-gray-300 border-gray-200 hover:border-gray-300"
+            }`}
+          >
+            {nombre}
           </button>
         );
       })}
