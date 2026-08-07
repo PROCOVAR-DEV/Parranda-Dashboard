@@ -18,6 +18,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
+from cache_reportes import cachear_reporte
 from routes.ventas import parse_date
 
 bp = Blueprint("portafolio", __name__)
@@ -25,6 +26,7 @@ bp = Blueprint("portafolio", __name__)
 
 @bp.route("/portafolio")
 @jwt_required()
+@cachear_reporte("portafolio")
 def get_portafolio():
     """
     Query params:

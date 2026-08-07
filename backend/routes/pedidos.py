@@ -24,6 +24,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
+from cache_reportes import cachear_reporte
 from routes.ventas import parse_date
 
 import os
@@ -181,6 +182,7 @@ def _rate(part: float, whole: float) -> float:
 
 @bp.route("/pedidos")
 @jwt_required()
+@cachear_reporte("pedidos")
 def get_pedidos():
     """
     Query params:

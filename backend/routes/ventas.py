@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import date
 
 from flask import Blueprint, jsonify, request
+from cache_reportes import cachear_reporte
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
@@ -90,6 +91,7 @@ def _query_grouped(db, model, fecha_inicio, fecha_fin, territorios_filter, group
 
 @bp.route("/ventas")
 @jwt_required()
+@cachear_reporte("ventas")
 def get_ventas():
     """
     NET Parranda sales rows.

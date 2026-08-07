@@ -1,6 +1,7 @@
 """SQLAlchemy ORM models for the Procovar - Parranda PostgreSQL database."""
 from datetime import datetime
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import (
     Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, BigInteger,
     Numeric, String, UniqueConstraint, func,
@@ -214,6 +215,33 @@ class RefreshLog(Base):
     rows_upserted = Column(Integer, default=0)
     failed_territories = Column(String(500), default="")
     error_message = Column(String(1000), nullable=True)
+
+
+class ReportCache(Base):
+    """Reportes ya calculados.
+
+    Cada pestania rehacia su consulta entera en cada carga, y con varias personas
+    mirando lo mismo la base repetia el mismo trabajo una vez por persona. Aqui se
+    guarda el resultado y se rehace solo cuando cambian los datos de verdad
+    (ver cache_reportes.version_datos).
+
+    `version` es la huella de los datos con la que se calculo: si no coincide con
+    la de ahora, lo guardado no vale y se ignora. No hace falta borrar nada al
+    correr el ETL — lo viejo deja de coincidir solo, que es mas seguro que
+    acordarse de invalidar.
+    """
+
+    __tablename__ = "report_cache"
+
+    cache_key = Column(String(500), primary_key=True)
+    version = Column(String(200), nullable=False)
+    payload = Column(JSONB, nullable=False)
+    computed_at = Column(DateTime, default=datetime.now)
+    # Para saber que reportes se usan de verdad y cuales llevan semanas sin
+    # abrirse, y poder tirar solo esos.
+    last_read_at = Column(DateTime, default=datetime.now)
+
+    __table_args__ = (Index("idx_report_cache_last_read", "last_read_at"),)
 
 
 class User(Base):

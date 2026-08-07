@@ -25,7 +25,56 @@ from models import Base, SKU, Territory, User
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-engine = create_engine(config.DATABASE_URL, pool_pre_ping=True)
+def _conectar_reintentando():
+    """Abre la conexion a Postgres, reintentando si el fallo es pasajero.
+
+    `pool_pre_ping` detecta conexiones MUERTAS, pero no ayuda cuando lo que
+    falla es abrir una NUEVA. Y eso pasa: el DNS interno de Docker parpadea
+    cuando un servicio se redespliega o la red del enjambre se reorganiza, y el
+    contenedor deja de resolver el nombre del servidor de base de datos durante
+    unos segundos.
+
+    El 07/08/2026 le paso a analitics: 16 segundos sin resolver y seis trazas de
+    error que llegaron por correo como si la aplicacion se hubiera caido. No se
+    habia caido. Un parpadeo de segundos no es una averia y no debe despertar a
+    nadie; solo si de verdad no vuelve en ~8 segundos se levanta el error.
+    """
+    import time
+
+    import psycopg2
+    from sqlalchemy.engine.url import make_url
+
+    url = make_url(config.DATABASE_URL)
+    espera = 0.25
+    ultimo = None
+
+    for intento in range(5):
+        try:
+            return psycopg2.connect(
+                host=url.host,
+                port=url.port or 5432,
+                dbname=url.database,
+                user=url.username,
+                password=url.password,
+                # Sin esto, un servidor que no contesta deja la peticion colgada
+                # minutos: el error tarda mas en llegar que el propio arreglo.
+                connect_timeout=5,
+            )
+        except psycopg2.OperationalError as e:
+            ultimo = e
+            if intento == 4:
+                break
+            time.sleep(espera)
+            espera = min(espera * 2, 4)
+
+    raise ultimo
+
+
+engine = create_engine(
+    config.DATABASE_URL,
+    creator=_conectar_reintentando,
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 

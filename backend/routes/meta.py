@@ -12,6 +12,7 @@ import calendar
 from datetime import date, timedelta
 
 from flask import Blueprint, jsonify, request
+from cache_reportes import cachear_reporte
 from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
@@ -213,6 +214,7 @@ def _net_hl_by_territory_sku(db, fecha_inicio: date, fecha_fin: date) -> dict[tu
 
 @bp.route("/meta-real")
 @jwt_required()
+@cachear_reporte("meta-real")
 def get_meta_real():
     """
     All values in HL — the frontend converts to blister/unidades.
