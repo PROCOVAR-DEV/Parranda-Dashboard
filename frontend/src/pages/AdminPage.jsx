@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api";
 import { TERRITORIES, SKUS, currentMonthISO, defaultDateRange } from "../constants";
 import useEstadoRefresh from "../hooks/useEstadoRefresh";
@@ -276,29 +277,69 @@ function UsersSection() {
  */
 function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
   const [abierto, setAbierto] = useState(false);
-  const caja = useRef(null);
+  const [caja, setCaja] = useState(null);
+  const boton = useRef(null);
+  const panel = useRef(null);
 
   const activos = valor ?? opciones.map((o) => o.id);
   const todos = activos.length === opciones.length;
 
-  // Cerrar al pulsar fuera o con Escape: si no, quedan varios abiertos a la vez
-  // y se solapan encima de las filas de abajo.
+  // La lista se dibuja FUERA de la tabla, con un portal.
+  //
+  // Dentro de la celda no vale ni siendo `absolute`: la tabla tiene su propio
+  // desplazamiento, asi que al abrirse le crecia el alto, aparecia una barra
+  // lateral y las filas de abajo se movian. Un desplegable no puede empujar la
+  // pagina que hay debajo.
+  //
+  // Al ir por portal se posiciona con las coordenadas del boton (`fixed`), y
+  // ningun contenedor de arriba puede recortarlo ni estirarse por su culpa.
+  const colocar = useCallback(() => {
+    const r = boton.current?.getBoundingClientRect();
+
+    if (!r) return;
+
+    const ALTO = 260;
+    // Si no cabe debajo, se abre hacia arriba. Si no, en las ultimas filas la
+    // lista se sale por el borde inferior y hay que hacer scroll para verla.
+    const haciaArriba = r.bottom + ALTO > window.innerHeight && r.top > ALTO;
+
+    setCaja({
+      left: r.left,
+      top: haciaArriba ? undefined : r.bottom + 4,
+      bottom: haciaArriba ? window.innerHeight - r.top + 4 : undefined,
+      minWidth: Math.max(r.width, 200),
+    });
+  }, []);
+
   useEffect(() => {
     if (!abierto) return;
 
+    colocar();
+
     const fuera = (e) => {
-      if (caja.current && !caja.current.contains(e.target)) setAbierto(false);
+      // El panel vive fuera de este componente, asi que hay que mirar los DOS:
+      // si solo se mirara el boton, elegir una opcion contaria como "clic
+      // fuera" y se cerraria en cuanto se marcara la primera.
+      if (boton.current?.contains(e.target)) return;
+      if (panel.current?.contains(e.target)) return;
+      setAbierto(false);
     };
     const escape = (e) => e.key === "Escape" && setAbierto(false);
 
     document.addEventListener("mousedown", fuera);
     document.addEventListener("keydown", escape);
+    // Al desplazar la pagina el boton se mueve y la lista se quedaria flotando
+    // en el sitio equivocado: se recoloca.
+    window.addEventListener("scroll", colocar, true);
+    window.addEventListener("resize", colocar);
 
     return () => {
       document.removeEventListener("mousedown", fuera);
       document.removeEventListener("keydown", escape);
+      window.removeEventListener("scroll", colocar, true);
+      window.removeEventListener("resize", colocar);
     };
-  }, [abierto]);
+  }, [abierto, colocar]);
 
   function alternar(id) {
     const siguiente = activos.includes(id)
@@ -317,8 +358,9 @@ function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
       : `${nombres[0]} +${nombres.length - 1}`;
 
   return (
-    <div ref={caja} className="relative inline-block">
+    <>
       <button
+        ref={boton}
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
@@ -332,32 +374,45 @@ function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
         <span className="text-[9px] opacity-60">{abierto ? "▲" : "▼"}</span>
       </button>
 
-      {abierto && (
-        <div className="absolute z-20 mt-1 w-56 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg py-1">
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="w-full text-left px-3 py-1.5 text-xs text-navy hover:bg-gray-50 border-b border-gray-100"
+      {abierto &&
+        caja &&
+        createPortal(
+          <div
+            ref={panel}
+            style={{
+              position: "fixed",
+              left: caja.left,
+              top: caja.top,
+              bottom: caja.bottom,
+              minWidth: caja.minWidth,
+            }}
+            className="z-50 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-xl py-1"
           >
-            {etiquetaTodos}
-          </button>
-          {opciones.map((o) => (
-            <label
-              key={o.id}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50"
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="w-full text-left px-3 py-1.5 text-xs text-navy hover:bg-gray-50 border-b border-gray-100"
             >
-              <input
-                type="checkbox"
-                checked={activos.includes(o.id)}
-                onChange={() => alternar(o.id)}
-                className="accent-[#1B3A6B] w-3.5 h-3.5"
-              />
-              <span className="truncate">{o.label}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
+              {etiquetaTodos}
+            </button>
+            {opciones.map((o) => (
+              <label
+                key={o.id}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 whitespace-nowrap"
+              >
+                <input
+                  type="checkbox"
+                  checked={activos.includes(o.id)}
+                  onChange={() => alternar(o.id)}
+                  className="accent-[#1B3A6B] w-3.5 h-3.5"
+                />
+                <span>{o.label}</span>
+              </label>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
