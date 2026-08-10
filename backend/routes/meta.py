@@ -17,6 +17,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy import func
 
 from auth import admin_required
+from auth import territorios_permitidos
 
 bp = Blueprint("meta", __name__)
 
@@ -245,7 +246,16 @@ def get_meta_real():
 
     db = get_db()
     try:
-        territories = db.query(Territory).order_by(Territory.orden).all()
+        # Real vs Meta pinta un bloque POR TERRITORIO. Sin este filtro, un
+        # usuario restringido a Las Tunas veia los nueve — la vista se le
+        # limitaba en las demas pestañas pero aqui no, que es la peor forma de
+        # tener un permiso: el que se cumple en casi todos los sitios.
+        _permitidos = territorios_permitidos()
+
+        q_terr = db.query(Territory).order_by(Territory.orden)
+        if _permitidos:
+            q_terr = q_terr.filter(Territory.nombre.in_(_permitidos))
+        territories = q_terr.all()
         skus = db.query(SKU).order_by(SKU.orden).all()
 
         cfg_row = db.query(MetaMonthConfig).filter(MetaMonthConfig.mes == mes).first()

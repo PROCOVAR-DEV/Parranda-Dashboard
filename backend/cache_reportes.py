@@ -163,7 +163,28 @@ def cachear_reporte(nombre: str):
     def decorador(fn):
         @wraps(fn)
         def envuelto(*args, **kwargs):
-            clave = (nombre, *sorted(request.args.items(multi=True)))
+            # La clave lleva TAMBIÉN a qué territorios llega quien pregunta.
+            #
+            # Sin eso, dos personas con los mismos parámetros compartían la
+            # misma respuesta guardada — y eso es servirle a una los datos de la
+            # otra. Pasó el 07/08/2026 nada más asignar territorios: el usuario
+            # restringido a Las Tunas entró y vio TODO (le tocó la copia del
+            # admin), y después el admin vio SOLO Las Tunas (le tocó la del
+            # otro). Al refrescar parecía arreglarse porque cambiaba la huella.
+            #
+            # Un permiso que la caché no conoce no es un permiso: es un filtro
+            # que se salta solo cuando alguien pasó antes por ahí.
+            from auth import territorios_permitidos
+
+            alcance = territorios_permitidos()
+            clave = (
+                nombre,
+                # "todos" y "ninguno en concreto" tienen que ser claves
+                # distintas, por eso el marcador explícito en vez de una cadena
+                # vacía.
+                "|".join(sorted(alcance)) if alcance else "__todos__",
+                *sorted(request.args.items(multi=True)),
+            )
             directo = None
 
             def calcular():
