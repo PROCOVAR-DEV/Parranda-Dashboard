@@ -20,6 +20,9 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql://postgres:0612@localhost:5432/parranda",
 )
+# Solo está instalado psycopg2; sin esto SQLAlchemy 2.1 elegiría psycopg 3.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg2://" + DATABASE_URL[len("postgresql://"):]
 
 # ── AxisPos MySQL source ──────────────────────────────────────────────────────
 
