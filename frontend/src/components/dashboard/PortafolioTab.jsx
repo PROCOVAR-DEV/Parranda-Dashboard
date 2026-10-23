@@ -78,7 +78,7 @@ export default function PortafolioTab({ distribucion, kpis, combinaciones, penet
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: DEPTH_COLORS[d.depth - 1] }}
                       />
                       <span className="text-gray-800">
@@ -169,7 +169,7 @@ export default function PortafolioTab({ distribucion, kpis, combinaciones, penet
                 <div key={d.name} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: d.color }}
                     />
                     <span className="text-gray-600">{d.name}</span>
@@ -232,7 +232,7 @@ export default function PortafolioTab({ distribucion, kpis, combinaciones, penet
                         return (
                           <span
                             key={code}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white"
+                            className="px-1.5 py-0.5 rounded-sm text-[10px] font-semibold text-white"
                             style={{ backgroundColor: sku?.color ?? "#6B7280" }}
                           >
                             {sku?.label ?? code}

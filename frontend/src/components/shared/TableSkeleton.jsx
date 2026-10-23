@@ -9,23 +9,23 @@ const ROWS = SKUS.length + 1; // SKU rows + TOTAL row
 function ShimmerCell({ wide = false }) {
   return (
     <td className={`px-2 py-2 ${wide ? "min-w-[200px]" : ""}`}>
-      <div className="h-3 rounded bg-gray-200 animate-pulse" style={{ width: wide ? "70%" : "60%" }} />
+      <div className="h-3 rounded-sm bg-gray-200 animate-pulse" style={{ width: wide ? "70%" : "60%" }} />
     </td>
   );
 }
 
 export default function TableSkeleton({ message = "Cargando..." }) {
   return (
-    <div className="overflow-auto border border-gray-200 rounded-lg shadow-sm bg-white">
+    <div className="overflow-auto border border-gray-200 rounded-lg shadow-xs bg-white">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="bg-navy">
             <th className="px-3 py-2 text-left min-w-[200px]">
-              <div className="h-3 rounded bg-navy-dark animate-pulse w-20" />
+              <div className="h-3 rounded-sm bg-navy-dark animate-pulse w-20" />
             </th>
             {Array.from({ length: COLS - 1 }).map((_, i) => (
               <th key={i} className="px-2 py-2">
-                <div className="h-3 rounded bg-navy-dark animate-pulse w-12 ml-auto" />
+                <div className="h-3 rounded-sm bg-navy-dark animate-pulse w-12 ml-auto" />
               </th>
             ))}
           </tr>

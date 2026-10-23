@@ -42,7 +42,7 @@ export default function StockTab({ rows, failedTerritories, loading, metric, ter
       </div>
 
       {failedTerritories.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded px-4 py-2.5">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-sm px-4 py-2.5">
           No se pudo consultar el stock de: {failedTerritories.join(", ")}
         </div>
       )}
@@ -93,7 +93,7 @@ export default function StockTab({ rows, failedTerritories, loading, metric, ter
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: sku.color }}
                       />
                       <span className="text-gray-800">{sku.label}</span>

@@ -196,7 +196,7 @@ ETL refresh + status are open to ALL users (header "Actualizar" button).
 sees; admins always see everything. Managed from Admin → Usuarios (chips).
 JWT secret is generated once into `backend/.jwt_secret` (or `JWT_SECRET_KEY` env).
 
-## 5. Frontend Layout (React 18 + Vite + Tailwind 3 + Recharts)
+## 5. Frontend Layout (React 18 + Vite + Tailwind 4 + Recharts)
 
 ```
 frontend/src/

@@ -24,7 +24,7 @@ function BarTooltipContent({ active, payload, label, metric, precision }) {
       {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-3 py-0.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.fill }} />
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.fill }} />
             <span className="text-gray-600">{SKU_BY_CODE[p.dataKey]?.label ?? p.dataKey}</span>
           </div>
           <span className="font-mono text-gray-700">{formatMetric(p.value, metric, precision)}</span>
@@ -220,7 +220,7 @@ export default function VentasTab({ territoryRows, dailyRows, loading, metric, t
                       <div key={d.codigo} className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
                           <div
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: d.color }}
                           />
                           <span className="text-gray-600">{d.label}</span>
@@ -276,7 +276,7 @@ export default function VentasTab({ territoryRows, dailyRows, loading, metric, t
                     >
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: sku.color }}
                         />
                         <span className="text-gray-800">{sku.label}</span>

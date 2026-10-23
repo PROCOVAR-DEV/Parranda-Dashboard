@@ -1,6 +1,120 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Paso a Tailwind 4 sin cambiar nada a la vista: lo que sigue devuelve los
+   valores por defecto de la v3 que la v4 cambio. */
+
+/* En la v4, hover solo actua con raton; en la v3 tambien al tocar. */
+@custom-variant hover (&:hover);
+
+@theme {
+  --color-navy: #1b3a6b;
+  --color-navy-dark: #14295a;
+
+  /* v4: interlineado sin unidades (1.333...) que hereda un text-[10px] hijo;
+     en la v3 era fijo en rem. */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+
+  /* La paleta de la v4 esta en oklch y los tonos varian un poco: los que usa
+     el tablero, con su hex de la v3. Un color nuevo de la paleta saldria con
+     el tono de la v4; para que no cambie, se anade aqui con su valor de la v3. */
+  --color-amber-50: #fffbeb;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-blue-50: #eff6ff;
+  --color-blue-200: #bfdbfe;
+  --color-blue-700: #1d4ed8;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-red-50: #fef2f2;
+  --color-red-200: #fecaca;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-900: #0c4a6e;
+  --color-slate-100: #f1f5f9;
+  --color-slate-300: #cbd5e1;
+  --color-slate-700: #334155;
+}
+
+@layer base {
+  /* v4: el borde por defecto es currentColor; en la v3 era gray-200. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v4: placeholder al 50% del color del texto; en la v3, gray-400. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  /* v4: campos sin fondo propio, celdas sin el 1px de relleno y campos de
+     fecha sin relleno interior (mas bajos); en la v3, los del navegador. */
+  input,
+  select,
+  textarea {
+    background-color: revert;
+  }
+  td,
+  th {
+    padding: 1px; /* el cellpadding por defecto de Chromium; revert no llega */
+  }
+  ::-webkit-date-and-time-value {
+    min-height: revert;
+    text-align: revert;
+  }
+  ::-webkit-datetime-edit {
+    display: revert;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: revert;
+  }
+  ::-webkit-datetime-edit,
+  ::-webkit-datetime-edit-year-field,
+  ::-webkit-datetime-edit-month-field,
+  ::-webkit-datetime-edit-day-field,
+  ::-webkit-datetime-edit-hour-field,
+  ::-webkit-datetime-edit-minute-field,
+  ::-webkit-datetime-edit-second-field,
+  ::-webkit-datetime-edit-millisecond-field,
+  ::-webkit-datetime-edit-meridiem-field {
+    padding-block: revert;
+  }
+
+  /* v4: los botones tienen cursor por defecto; en la v3, la mano. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 body {
   margin: 0;

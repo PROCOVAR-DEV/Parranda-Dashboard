@@ -46,7 +46,7 @@ export default function RefreshButton({ fechaInicio, fechaFin, onComplete }) {
         onClick={trigger}
         disabled={running}
         title="Actualizar datos desde AxisPos para el período seleccionado"
-        className="flex items-center gap-1.5 text-xs font-semibold bg-white/10 border border-white/25 rounded px-3 py-1.5 hover:bg-white/20 transition-colors disabled:opacity-60"
+        className="flex items-center gap-1.5 text-xs font-semibold bg-white/10 border border-white/25 rounded-sm px-3 py-1.5 hover:bg-white/20 transition-colors disabled:opacity-60"
       >
         <svg
           className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`}

@@ -45,7 +45,7 @@ export default function SkuPills({ activeSkus, onToggle, onReset }) {
             onClick={() => onToggle(sku.codigo)}
             className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
               isActive
-                ? "text-white border-transparent shadow-sm"
+                ? "text-white border-transparent shadow-xs"
                 : "bg-white text-gray-400 border-gray-200 hover:border-gray-300"
             }`}
             style={isActive ? { backgroundColor: sku.color, borderColor: sku.color } : {}}

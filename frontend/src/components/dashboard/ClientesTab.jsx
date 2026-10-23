@@ -68,7 +68,7 @@ export default function ClientesTab({
                   onClick={() => onTerritoryToggle(t)}
                   className={`text-left bg-white border rounded-lg p-4 transition-all ${
                     selected
-                      ? "border-navy ring-1 ring-navy/30 shadow-sm"
+                      ? "border-navy ring-1 ring-navy/30 shadow-xs"
                       : "border-gray-200 opacity-50 hover:opacity-80"
                   }`}
                 >

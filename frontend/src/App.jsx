@@ -136,7 +136,7 @@ function Dashboard() {
           <span className="opacity-75">{user.display_name || user.username}</span>
           <button
             onClick={logout}
-            className="text-xs border border-white/30 rounded px-2.5 py-1 hover:bg-white/10 transition-colors"
+            className="text-xs border border-white/30 rounded-sm px-2.5 py-1 hover:bg-white/10 transition-colors"
           >
             Salir
           </button>
