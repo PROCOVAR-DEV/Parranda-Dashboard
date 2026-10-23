@@ -80,7 +80,7 @@ export default function FilterPanel({
                   type="date"
                   value={filters.fecha_inicio}
                   onChange={(e) => onUpdate("fecha_inicio", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+                  className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
                 />
               </div>
               <div>
@@ -89,7 +89,7 @@ export default function FilterPanel({
                   type="date"
                   value={filters.fecha_fin}
                   onChange={(e) => onUpdate("fecha_fin", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+                  className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function FilterPanel({
               type="date"
               value={stockFecha}
               onChange={(e) => onStockFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+              className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
             />
             <p className="text-xs text-gray-400 mt-1">Existencia al cierre de ese día.</p>
           </section>
@@ -115,7 +115,7 @@ export default function FilterPanel({
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Métrica
             </h3>
-            <div className="flex rounded border border-gray-300 overflow-hidden">
+            <div className="flex rounded-sm border border-gray-300 overflow-hidden">
               {(activeTab === "stock" ? STOCK_METRIC_OPTIONS : VENTAS_METRIC_OPTIONS).map((o) => {
                 const current = activeTab === "stock" ? stockMetric : ventasMetric;
                 const onClick =
@@ -144,7 +144,7 @@ export default function FilterPanel({
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Visual
             </h3>
-            <div className="flex rounded border border-gray-300 overflow-hidden">
+            <div className="flex rounded-sm border border-gray-300 overflow-hidden">
               {PRECISION_OPTIONS.map((o) => (
                 <button
                   key={o.value}
@@ -184,7 +184,7 @@ export default function FilterPanel({
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleTerritory(t)}
-                    className="accent-[#1B3A6B] w-3.5 h-3.5"
+                    className="accent-navy w-3.5 h-3.5"
                   />
                   <span className={checked ? "text-gray-800" : "text-gray-400"}>{t}</span>
                 </label>

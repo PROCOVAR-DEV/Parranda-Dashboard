@@ -33,7 +33,7 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-3 py-2">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm px-3 py-2">
             {error}
           </div>
         )}
@@ -48,7 +48,7 @@ export default function LoginPage() {
             onChange={(e) => setUsername(e.target.value)}
             autoFocus
             autoComplete="username"
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-navy"
+            className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-hidden focus:border-navy"
           />
         </div>
 
@@ -61,14 +61,14 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-navy"
+            className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-hidden focus:border-navy"
           />
         </div>
 
         <button
           type="submit"
           disabled={busy || !username || !password}
-          className="w-full bg-navy text-white rounded py-2 text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-50"
+          className="w-full bg-navy text-white rounded-sm py-2 text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-50"
         >
           {busy ? "Entrando…" : "Entrar"}
         </button>

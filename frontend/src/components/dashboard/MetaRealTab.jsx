@@ -129,7 +129,7 @@ function Block({ title, skuValues, diasTotales, diasTranscurridos, metric, preci
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto shadow-xs">
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className={highlight ? "bg-navy-dark text-white" : "bg-navy text-white"}>
@@ -215,10 +215,10 @@ export default function MetaRealTab({
             type="month"
             value={mes}
             onChange={(e) => onMes(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
           />
         </div>
-        <div className="flex rounded border border-gray-300 overflow-hidden">
+        <div className="flex rounded-sm border border-gray-300 overflow-hidden">
           {VENTAS_METRIC_OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -233,7 +233,7 @@ export default function MetaRealTab({
             </button>
           ))}
         </div>
-        <div className="flex rounded border border-gray-300 overflow-hidden">
+        <div className="flex rounded-sm border border-gray-300 overflow-hidden">
           {PRECISION_OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -259,7 +259,7 @@ export default function MetaRealTab({
       </div>
 
       {meta?.stock_fallidos?.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded px-4 py-2.5">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-sm px-4 py-2.5">
           Stock no disponible para: {meta.stock_fallidos.join(", ")}
         </div>
       )}

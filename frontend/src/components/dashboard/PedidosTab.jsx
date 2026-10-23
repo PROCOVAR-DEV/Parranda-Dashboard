@@ -59,7 +59,7 @@ function Segmented({ label, options, value, onChange }) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-gray-500 font-medium">{label}</span>
-      <div className="flex rounded border border-gray-300 overflow-hidden">
+      <div className="flex rounded-sm border border-gray-300 overflow-hidden">
         {options.map((o) => (
           <button
             key={o.value}
@@ -515,8 +515,8 @@ export default function PedidosTab({
                           {num(e.pedidos)} · {pct((100 * e.pedidos) / base)}
                         </span>
                       </div>
-                      <div className="h-6 bg-gray-100 rounded overflow-hidden">
-                        <div className="h-full bg-navy rounded" style={{ width: `${width}%` }} />
+                      <div className="h-6 bg-gray-100 rounded-sm overflow-hidden">
+                        <div className="h-full bg-navy rounded-sm" style={{ width: `${width}%` }} />
                       </div>
                     </div>
                   );
@@ -690,7 +690,7 @@ export default function PedidosTab({
               <select
                 value={sucursalFilter}
                 onChange={(e) => setVendedorSucursal(e.target.value)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+                className="text-xs border border-gray-300 rounded-sm px-2 py-1 bg-white text-gray-700"
               >
                 <option value="">Todas</option>
                 {visibleTerritories.map((t) => (
@@ -703,7 +703,7 @@ export default function PedidosTab({
               value={vendedorQuery}
               onChange={(e) => setVendedorQuery(e.target.value)}
               placeholder="Buscar vendedor..."
-              className="text-xs border border-gray-300 rounded px-2.5 py-1 w-56 text-gray-700 placeholder-gray-400"
+              className="text-xs border border-gray-300 rounded-sm px-2.5 py-1 w-56 text-gray-700 placeholder-gray-400"
             />
             <Segmented
               label="Unidad:"

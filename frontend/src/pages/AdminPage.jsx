@@ -97,7 +97,7 @@ function UsersSection() {
             placeholder="Usuario"
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-navy"
           />
           <div className="relative">
             <input
@@ -105,7 +105,7 @@ function UsersSection() {
               type={showCreatePwd ? "text" : "password"}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="border border-gray-300 rounded pl-2 pr-14 py-1.5 text-sm w-full font-mono focus:outline-none focus:border-navy"
+              className="border border-gray-300 rounded-sm pl-2 pr-14 py-1.5 text-sm w-full font-mono focus:outline-hidden focus:border-navy"
             />
             <span className="absolute right-1.5 top-1/2 -translate-y-1/2 flex gap-1">
               <button
@@ -133,12 +133,12 @@ function UsersSection() {
             placeholder="Nombre"
             value={form.display_name}
             onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-navy"
           />
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-navy"
           >
             <option value="viewer">Viewer</option>
             <option value="admin">Admin</option>
@@ -146,7 +146,7 @@ function UsersSection() {
           <button
             type="submit"
             disabled={!form.username || form.password.length < 6}
-            className="bg-navy text-white rounded text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-40 py-1.5"
+            className="bg-navy text-white rounded-sm text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-40 py-1.5"
           >
             Crear
           </button>
@@ -177,7 +177,7 @@ function UsersSection() {
                   <select
                     value={u.role}
                     onChange={(e) => updateUser(u.id, { role: e.target.value })}
-                    className="border border-gray-200 rounded px-1.5 py-0.5 text-xs"
+                    className="border border-gray-200 rounded-sm px-1.5 py-0.5 text-xs"
                   >
                     <option value="viewer">Viewer</option>
                     <option value="admin">Admin</option>
@@ -364,7 +364,7 @@ function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
-        className={`flex items-center gap-1.5 min-w-[170px] px-2.5 py-1 rounded-md border text-xs text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-navy/40 ${
+        className={`flex items-center gap-1.5 min-w-[170px] px-2.5 py-1 rounded-md border text-xs text-left transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-navy/40 ${
           todos
             ? "border-gray-200 text-gray-400 bg-white hover:border-gray-300"
             : "border-navy/30 text-navy bg-navy/5 hover:border-navy/50 font-semibold"
@@ -404,7 +404,7 @@ function PermisoSelect({ opciones, valor, onChange, etiquetaTodos }) {
                   type="checkbox"
                   checked={activos.includes(o.id)}
                   onChange={() => alternar(o.id)}
-                  className="accent-[#1B3A6B] w-3.5 h-3.5"
+                  className="accent-navy w-3.5 h-3.5"
                 />
                 <span>{o.label}</span>
               </label>
@@ -433,7 +433,7 @@ function PasswordReset({ onSave, onCancel }) {
         placeholder="Nueva contraseña"
         value={pwd}
         onChange={(e) => setPwd(e.target.value)}
-        className="border border-gray-300 rounded px-2 py-0.5 text-xs w-36 font-mono"
+        className="border border-gray-300 rounded-sm px-2 py-0.5 text-xs w-36 font-mono"
         autoFocus
       />
       <button
@@ -532,7 +532,7 @@ function MetasSection() {
     <div className="space-y-4">
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
       {status && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded px-4 py-2.5">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-sm px-4 py-2.5">
           {status}
         </div>
       )}
@@ -544,7 +544,7 @@ function MetasSection() {
             type="month"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -558,19 +558,19 @@ function MetasSection() {
             value={diasTotales}
             onChange={(e) => setDiasTotales(e.target.value)}
             placeholder="auto"
-            className="border border-gray-300 rounded px-2 py-1 text-sm w-20 focus:outline-none focus:border-navy"
+            className="border border-gray-300 rounded-sm px-2 py-1 text-sm w-20 focus:outline-hidden focus:border-navy"
           />
         </div>
         <div className="ml-auto flex gap-2">
           <button
             onClick={copyFromPrevious}
-            className="px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-600 hover:border-navy hover:text-navy transition-colors"
+            className="px-3 py-1.5 rounded-sm border border-gray-300 text-xs text-gray-600 hover:border-navy hover:text-navy transition-colors"
           >
             Copiar mes anterior
           </button>
           <button
             onClick={save}
-            className="px-4 py-1.5 rounded bg-navy text-white text-xs font-semibold hover:bg-navy-dark transition-colors"
+            className="px-4 py-1.5 rounded-sm bg-navy text-white text-xs font-semibold hover:bg-navy-dark transition-colors"
           >
             Guardar Metas
           </button>
@@ -602,7 +602,7 @@ function MetasSection() {
                       step="1"
                       value={grid[`${t}|${s.codigo}`] ?? ""}
                       onChange={(e) => setGrid({ ...grid, [`${t}|${s.codigo}`]: e.target.value })}
-                      className="border border-gray-200 rounded px-2 py-1 text-sm w-24 text-right focus:outline-none focus:border-navy"
+                      className="border border-gray-200 rounded-sm px-2 py-1 text-sm w-24 text-right focus:outline-hidden focus:border-navy"
                     />
                   </td>
                 ))}
@@ -712,7 +712,7 @@ function DatosSection() {
               type="date"
               value={range.fecha_inicio}
               onChange={(e) => setRange({ ...range, fecha_inicio: e.target.value })}
-              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+              className="border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
             />
           </div>
           <div>
@@ -721,13 +721,13 @@ function DatosSection() {
               type="date"
               value={range.fecha_fin}
               onChange={(e) => setRange({ ...range, fecha_fin: e.target.value })}
-              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+              className="border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
             />
           </div>
           <button
             onClick={() => triggerRefresh()}
             disabled={running}
-            className="px-4 py-1.5 rounded bg-navy text-white text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-50"
+            className="px-4 py-1.5 rounded-sm bg-navy text-white text-sm font-semibold hover:bg-navy-dark transition-colors disabled:opacity-50"
           >
             {running ? "Actualizando…" : "Actualizar"}
           </button>
@@ -769,12 +769,12 @@ function DatosSection() {
             <input
               value={host}
               onChange={(e) => setHost(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+              className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
             />
           </div>
           <button
             onClick={saveHost}
-            className="px-4 py-1.5 rounded border border-gray-300 text-sm text-gray-600 hover:border-navy hover:text-navy transition-colors"
+            className="px-4 py-1.5 rounded-sm border border-gray-300 text-sm text-gray-600 hover:border-navy hover:text-navy transition-colors"
           >
             Guardar
           </button>
@@ -792,7 +792,7 @@ function DatosSection() {
             value={pedidosUrl}
             onChange={(e) => setPedidosUrl(e.target.value)}
             placeholder="https://pedidos.procovar.cloud/api"
-            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-navy"
+            className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-navy"
           />
         </div>
         <div className="flex items-end gap-3">
@@ -805,12 +805,12 @@ function DatosSection() {
               value={pedidosKey}
               onChange={(e) => setPedidosKey(e.target.value)}
               placeholder={pedidosKeySet ? "•••••••• (sin cambios)" : "pk_…"}
-              className="w-full border border-gray-300 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:border-navy"
+              className="w-full border border-gray-300 rounded-sm px-2 py-1 text-sm font-mono focus:outline-hidden focus:border-navy"
             />
           </div>
           <button
             onClick={savePedidos}
-            className="px-4 py-1.5 rounded border border-gray-300 text-sm text-gray-600 hover:border-navy hover:text-navy transition-colors"
+            className="px-4 py-1.5 rounded-sm border border-gray-300 text-sm text-gray-600 hover:border-navy hover:text-navy transition-colors"
           >
             Guardar
           </button>
