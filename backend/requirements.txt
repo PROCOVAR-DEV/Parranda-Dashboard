@@ -1,8 +1,8 @@
-# Versiones fijas (pip freeze en python:3.12-slim, 14/10/2026): un rebuild no debe
+# Versiones fijas (pip freeze en python:3.12-slim, 14/10/2026; certifi subido el 23/10/2026 y probado en python:3.13-slim): un rebuild no debe
 # cambiar nada. El 14/10 un "sqlalchemy>=2.0" trajo la 2.1 y tumbó el backend.
 bcrypt==5.0.0
 blinker==1.9.0
-certifi==2026.7.22
+certifi==2026.10.19
 charset-normalizer==3.5.2
 click==8.5.0
 et_xmlfile==2.0.0
